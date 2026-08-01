@@ -7,7 +7,6 @@ class AttendanceRecord {
   final String? rollNumber;
   final DateTime markedAt;
   final bool faceVerified;
-  final String deviceId;
 
   AttendanceRecord({
     required this.sessionId,
@@ -16,7 +15,6 @@ class AttendanceRecord {
     this.rollNumber,
     required this.markedAt,
     this.faceVerified = false,
-    required this.deviceId,
   });
 
   Map<String, dynamic> toMap() {
@@ -27,7 +25,6 @@ class AttendanceRecord {
       'rollNumber': rollNumber,
       'markedAt': Timestamp.fromDate(markedAt),
       'faceVerified': faceVerified,
-      'deviceId': deviceId,
     };
   }
 
@@ -39,7 +36,6 @@ class AttendanceRecord {
       rollNumber: map['rollNumber'],
       markedAt: (map['markedAt'] as Timestamp).toDate(),
       faceVerified: map['faceVerified'] ?? false,
-      deviceId: map['deviceId'] ?? '',
     );
   }
 }

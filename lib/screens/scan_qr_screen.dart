@@ -3,7 +3,6 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import '../services/session_service.dart';
 import '../services/attendance_service.dart';
 import '../services/auth_service.dart';
-import '../services/device_service.dart';
 import '../models/attendance.dart';
 import '../models/app_user.dart';
 
@@ -18,7 +17,7 @@ class _ScanQrScreenState extends State<ScanQrScreen> {
   final _sessionService = SessionService();
   final _attendanceService = AttendanceService();
   final _authService = AuthService();
-  final _deviceService = DeviceService();
+
 
   bool _isProcessing = false;
   String? _statusMessage;
@@ -53,7 +52,7 @@ class _ScanQrScreenState extends State<ScanQrScreen> {
       // NOTE: Face verification will be inserted here in Section 5,
       // before marking attendance. GPS check deferred to final stretch.
 
-      final deviceId = await _deviceService.getDeviceId();
+    
 
       final record = AttendanceRecord(
         sessionId: session.sessionId,
@@ -61,7 +60,6 @@ class _ScanQrScreenState extends State<ScanQrScreen> {
         studentName: currentUser.name,
         rollNumber: currentUser.rollNumber,
         markedAt: DateTime.now(),
-        deviceId: deviceId,
       );
 
       await _attendanceService.markAttendance(record);
