@@ -6,13 +6,13 @@ class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // Register a new user with a chosen role
-Future<AppUser?> registerUser({
+  Future<AppUser?> registerUser({
     required String name,
     required String email,
     required String password,
     required String role,
     String? rollNumber,
+    List<double>? faceEmbedding,
   }) async {
     UserCredential cred = await _auth.createUserWithEmailAndPassword(
       email: email,
@@ -28,25 +28,14 @@ Future<AppUser?> registerUser({
       email: email,
       role: role,
       rollNumber: role == 'student' ? rollNumber : null,
+      faceEmbedding: role == 'student' ? faceEmbedding : null,
     );
 
     await _firestore.collection('users').doc(user.uid).set(appUser.toMap());
 
     return appUser;
   }
-  
-// Fetch the logged-in user's full profile (role, name, etc.) from Firestore
-  Future<AppUser?> getCurrentAppUser() async {
-    final user = _auth.currentUser;
-    if (user == null) return null;
 
-    final doc = await _firestore.collection('users').doc(user.uid).get();
-    if (!doc.exists) return null;
-
-    return AppUser.fromMap(doc.data()!);
-  }
-
-  // Log in existing user
   Future<AppUser?> loginUser({
     required String email,
     required String password,
@@ -57,6 +46,16 @@ Future<AppUser?> registerUser({
     );
 
     final user = cred.user;
+    if (user == null) return null;
+
+    final doc = await _firestore.collection('users').doc(user.uid).get();
+    if (!doc.exists) return null;
+
+    return AppUser.fromMap(doc.data()!);
+  }
+
+  Future<AppUser?> getCurrentAppUser() async {
+    final user = _auth.currentUser;
     if (user == null) return null;
 
     final doc = await _firestore.collection('users').doc(user.uid).get();

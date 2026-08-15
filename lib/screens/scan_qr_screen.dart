@@ -3,8 +3,10 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import '../services/session_service.dart';
 import '../services/attendance_service.dart';
 import '../services/auth_service.dart';
+import '../services/face_service.dart';
 import '../models/attendance.dart';
 import '../models/app_user.dart';
+import 'face_capture_screen.dart';
 
 class ScanQrScreen extends StatefulWidget {
   const ScanQrScreen({super.key});
@@ -17,7 +19,7 @@ class _ScanQrScreenState extends State<ScanQrScreen> {
   final _sessionService = SessionService();
   final _attendanceService = AttendanceService();
   final _authService = AuthService();
-
+  final _faceService = FaceService();
 
   bool _isProcessing = false;
   String? _statusMessage;
@@ -37,7 +39,6 @@ class _ScanQrScreenState extends State<ScanQrScreen> {
         setState(() => _statusMessage = 'Invalid QR code.');
         return;
       }
-
       if (session.isExpired) {
         setState(() => _statusMessage = 'This QR code has expired.');
         return;
@@ -49,10 +50,35 @@ class _ScanQrScreenState extends State<ScanQrScreen> {
         return;
       }
 
-      // NOTE: Face verification will be inserted here in Section 5,
-      // before marking attendance. GPS check deferred to final stretch.
+      if (currentUser.faceEmbedding == null) {
+        setState(() => _statusMessage = 'No registered face found. Please contact admin.');
+        return;
+      }
 
-    
+      setState(() => _statusMessage = 'Verifying your face...');
+      if (!mounted) return;
+
+      final liveEmbedding = await Navigator.push<List<double>>(
+        context,
+        MaterialPageRoute(builder: (_) => const FaceCaptureScreen()),
+      );
+
+      if (liveEmbedding == null) {
+        setState(() => _statusMessage = 'Face verification cancelled.');
+        return;
+      }
+
+      await _faceService.loadModel();
+      final similarity = _faceService.cosineSimilarity(
+        currentUser.faceEmbedding!,
+        liveEmbedding,
+      );
+
+      const threshold = 0.7;
+      if (similarity < threshold) {
+        setState(() => _statusMessage = 'Face verification failed. Please try again.');
+        return;
+      }
 
       final record = AttendanceRecord(
         sessionId: session.sessionId,
@@ -60,6 +86,7 @@ class _ScanQrScreenState extends State<ScanQrScreen> {
         studentName: currentUser.name,
         rollNumber: currentUser.rollNumber,
         markedAt: DateTime.now(),
+        faceVerified: true,
       );
 
       await _attendanceService.markAttendance(record);
@@ -85,9 +112,7 @@ class _ScanQrScreenState extends State<ScanQrScreen> {
                 final barcodes = capture.barcodes;
                 if (barcodes.isNotEmpty) {
                   final code = barcodes.first.rawValue;
-                  if (code != null) {
-                    _handleScan(code);
-                  }
+                  if (code != null) _handleScan(code);
                 }
               },
             )

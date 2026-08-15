@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import 'teacher_home_screen.dart';
 import 'student_home_screen.dart';
+import 'face_capture_screen.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -20,11 +21,28 @@ class _SignupScreenState extends State<SignupScreen> {
   String _selectedRole = 'student';
   bool _isLoading = false;
   String? _errorMessage;
+  List<double>? _capturedEmbedding;
+
+  Future<void> _captureFace() async {
+    final result = await Navigator.push<List<double>>(
+      context,
+      MaterialPageRoute(builder: (_) => const FaceCaptureScreen()),
+    );
+    if (result != null) {
+      setState(() => _capturedEmbedding = result);
+    }
+  }
 
   Future<void> _handleSignup() async {
-    if (_selectedRole == 'student' && _rollNumberController.text.trim().isEmpty) {
-      setState(() => _errorMessage = 'Roll number is required for students.');
-      return;
+    if (_selectedRole == 'student') {
+      if (_rollNumberController.text.trim().isEmpty) {
+        setState(() => _errorMessage = 'Roll number is required for students.');
+        return;
+      }
+      if (_capturedEmbedding == null) {
+        setState(() => _errorMessage = 'Please capture your face before signing up.');
+        return;
+      }
     }
 
     setState(() {
@@ -39,6 +57,7 @@ class _SignupScreenState extends State<SignupScreen> {
         password: _passwordController.text.trim(),
         role: _selectedRole,
         rollNumber: _rollNumberController.text.trim(),
+        faceEmbedding: _capturedEmbedding,
       );
 
       if (user == null || !mounted) return;
@@ -108,6 +127,17 @@ class _SignupScreenState extends State<SignupScreen> {
                   labelText: 'Roll Number',
                   hintText: 'e.g. 23CS045',
                 ),
+              ),
+              const SizedBox(height: 16),
+              OutlinedButton.icon(
+                icon: Icon(
+                  _capturedEmbedding == null ? Icons.face : Icons.check_circle,
+                  color: _capturedEmbedding == null ? null : Colors.green,
+                ),
+                label: Text(_capturedEmbedding == null
+                    ? 'Capture Face for Verification'
+                    : 'Face Captured ✓'),
+                onPressed: _captureFace,
               ),
             ],
             const SizedBox(height: 20),
