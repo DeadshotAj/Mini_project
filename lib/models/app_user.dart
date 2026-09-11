@@ -3,6 +3,8 @@ class AppUser {
   final String name;
   final String email;
   final String role;
+  // 'pending' | 'approved' | 'rejected' — only used for teachers
+  final String status;
   final String? rollNumber;
   final List<double>? faceEmbedding;  // ADDED
 
@@ -11,6 +13,7 @@ class AppUser {
     required this.name,
     required this.email,
     required this.role,
+    this.status = 'approved',
     this.rollNumber,
     this.faceEmbedding,  // ADDED
   });
@@ -21,6 +24,7 @@ class AppUser {
       'name': name,
       'email': email,
       'role': role,
+      'status': status,
       'rollNumber': rollNumber,
       'faceEmbedding': faceEmbedding,  // ADDED
     };
@@ -32,10 +36,11 @@ class AppUser {
       name: map['name'] ?? '',
       email: map['email'] ?? '',
       role: map['role'] ?? 'student',
+      status: map['status'] ?? 'approved',
       rollNumber: map['rollNumber'],
       faceEmbedding: map['faceEmbedding'] != null   // ADDED
           ? List<double>.from(map['faceEmbedding']) // ADDED
           : null,                                    // ADDED
     );
   }
-}
+}
