@@ -27,6 +27,7 @@ class AuthService {
       name: name,
       email: email,
       role: role,
+      status: role == 'teacher' ? 'pending' : 'approved',
       rollNumber: role == 'student' ? rollNumber : null,
       faceEmbedding: role == 'student' ? faceEmbedding : null,
     );
@@ -62,6 +63,61 @@ class AuthService {
     if (!doc.exists) return null;
 
     return AppUser.fromMap(doc.data()!);
+  }
+
+  Future<List<AppUser>> getAllStudents() async {
+    final query = await _firestore
+        .collection('users')
+        .where('role', isEqualTo: 'student')
+        .get();
+    final students = query.docs
+        .map((doc) => AppUser.fromMap(doc.data()))
+        .toList();
+    students.sort((a, b) => a.name.compareTo(b.name));
+    return students;
+  }
+
+  Future<List<AppUser>> getAllTeachers() async {
+    final query = await _firestore
+        .collection('users')
+        .where('role', isEqualTo: 'teacher')
+        .get();
+    final teachers = query.docs
+        .map((doc) => AppUser.fromMap(doc.data()))
+        .toList();
+    teachers.sort((a, b) => a.name.compareTo(b.name));
+    return teachers;
+  }
+
+  Future<List<AppUser>> getPendingTeachers() async {
+    final query = await _firestore
+        .collection('users')
+        .where('role', isEqualTo: 'teacher')
+        .where('status', isEqualTo: 'pending')
+        .get();
+    final teachers = query.docs
+        .map((doc) => AppUser.fromMap(doc.data()))
+        .toList();
+    teachers.sort((a, b) => a.name.compareTo(b.name));
+    return teachers;
+  }
+
+  Future<void> approveTeacher(String uid) async {
+    await _firestore
+        .collection('users')
+        .doc(uid)
+        .update({'status': 'approved'});
+  }
+
+  Future<void> rejectTeacher(String uid) async {
+    await _firestore
+        .collection('users')
+        .doc(uid)
+        .update({'status': 'rejected'});
+  }
+
+  Future<void> sendPasswordResetEmail(String email) async {
+    await _auth.sendPasswordResetEmail(email: email);
   }
 
   Future<void> signOut() async {

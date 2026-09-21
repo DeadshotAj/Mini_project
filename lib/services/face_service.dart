@@ -4,12 +4,62 @@ import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:tflite_flutter/tflite_flutter.dart';
 import 'package:image/image.dart' as img;
 
+/// Liveness gestures the app can randomly challenge a student with.
+///
+/// Chosen for reliability across front cameras:
+///  • smile    — smilingProbability, unaffected by orientation
+///  • blink    — eye open probabilities, unaffected by mirroring
+///  • tiltHead — headEulerAngleZ abs ≥ 20° — either direction, so the
+///               front-camera mirror flip doesn't matter
+enum LivenessGesture {
+  smile,
+  blink,
+  tiltHead;
+
+  String get instruction {
+    switch (this) {
+      case LivenessGesture.smile:
+        return 'Give a big smile 😊';
+      case LivenessGesture.blink:
+        return 'Blink both eyes slowly 😑';
+      case LivenessGesture.tiltHead:
+        return 'Tilt your head to either side ↔';
+    }
+  }
+
+  String get shortLabel {
+    switch (this) {
+      case LivenessGesture.smile:
+        return 'Smile';
+      case LivenessGesture.blink:
+        return 'Blink';
+      case LivenessGesture.tiltHead:
+        return 'Tilt Head';
+    }
+  }
+
+  static LivenessGesture random() {
+    final values = LivenessGesture.values;
+    return values[Random().nextInt(values.length)];
+  }
+}
+
 class FaceService {
   late Interpreter _interpreter;
   bool _modelLoaded = false;
 
+  /// Used for embedding extraction (accurate, no classification needed).
   final FaceDetector _faceDetector = FaceDetector(
     options: FaceDetectorOptions(performanceMode: FaceDetectorMode.accurate),
+  );
+
+  /// Used for live gesture detection.
+  /// enableClassification provides smilingProbability + eye open probabilities.
+  final FaceDetector _gestureDetector = FaceDetector(
+    options: FaceDetectorOptions(
+      enableClassification: true,
+      performanceMode: FaceDetectorMode.fast,
+    ),
   );
 
   Future<void> loadModel() async {
@@ -67,8 +117,42 @@ class FaceService {
     return dot / (sqrt(normA) * sqrt(normB));
   }
 
+  /// Analyses a live camera [InputImage] and returns true if the [gesture]
+  /// is currently being performed.
+  ///
+  /// Thresholds:
+  ///  • smile    — smilingProbability ≥ 0.60 (looser than default; MLKit is
+  ///               conservative so 0.6 still requires a genuine smile)
+  ///  • blink    — BOTH eye open probabilities < 0.25 (deliberate slow blink)
+  ///  • tiltLeft — headEulerAngleZ ≥ 20° (tilt/roll axis; + = left ear down,
+  ///               which is the same direction regardless of camera mirroring)
+  Future<bool> analyzeGesture(InputImage image, LivenessGesture gesture) async {
+    final faces = await _gestureDetector.processImage(image);
+    if (faces.isEmpty) return false;
+    final face = faces.first;
+
+    switch (gesture) {
+      case LivenessGesture.smile:
+        final prob = face.smilingProbability;
+        return prob != null && prob >= 0.60;
+
+      case LivenessGesture.blink:
+        final left = face.leftEyeOpenProbability;
+        final right = face.rightEyeOpenProbability;
+        // Both eyes must be closed for a genuine blink (not just a squint)
+        return left != null && right != null && left < 0.25 && right < 0.25;
+
+      case LivenessGesture.tiltHead:
+        // Accept either direction — front cameras mirror the image, making
+        // the sign of headEulerAngleZ device-dependent. abs() removes ambiguity.
+        final z = face.headEulerAngleZ;
+        return z != null && z.abs() >= 20.0;
+    }
+  }
+
   void dispose() {
     _faceDetector.close();
+    _gestureDetector.close();
     if (_modelLoaded) _interpreter.close();
   }
-}
+}

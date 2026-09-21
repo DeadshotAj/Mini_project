@@ -7,6 +7,9 @@ class AttendanceRecord {
   final String? rollNumber;
   final DateTime markedAt;
   final bool faceVerified;
+  // 'verified' | 'failed' | 'overridden'
+  // Defaults to 'verified' for backwards compatibility with existing records.
+  final String verificationStatus;
 
   AttendanceRecord({
     required this.sessionId,
@@ -15,6 +18,7 @@ class AttendanceRecord {
     this.rollNumber,
     required this.markedAt,
     this.faceVerified = false,
+    this.verificationStatus = 'verified',
   });
 
   Map<String, dynamic> toMap() {
@@ -25,6 +29,7 @@ class AttendanceRecord {
       'rollNumber': rollNumber,
       'markedAt': Timestamp.fromDate(markedAt),
       'faceVerified': faceVerified,
+      'verificationStatus': verificationStatus,
     };
   }
 
@@ -36,6 +41,7 @@ class AttendanceRecord {
       rollNumber: map['rollNumber'],
       markedAt: (map['markedAt'] as Timestamp).toDate(),
       faceVerified: map['faceVerified'] ?? false,
+      verificationStatus: map['verificationStatus'] ?? 'verified',
     );
   }
 }

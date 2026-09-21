@@ -32,6 +32,11 @@ set(CMAKE_CXX_FLAGS_PROFILE "${CMAKE_CXX_FLAGS_RELEASE}")
 # Use Unicode for all projects.
 add_definitions(-DUNICODE -D_UNICODE)
 
+# Suppress MSVC 14.5x hard-error on <experimental/coroutine> used by some
+# Flutter plugins (flutter_ble_peripheral, permission_handler_windows).
+# The header still exists but requires this macro to compile on VS 2022 v18+.
+add_definitions(-D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS)
+
 # Compilation settings that should be applied to most targets.
 #
 # Be cautious about adding new options here, as plugins use this function by
