@@ -44,6 +44,10 @@ dependencies:
   share_plus: ^10.0.2
   uuid: ^4.6.0
   device_info_plus: ^11.2.0
+  # BLE proximity check
+  flutter_ble_peripheral: ^1.0.0   # teacher side: advertise beacon (Android only)
+  flutter_blue_plus: ^1.35.5       # student side: scan + RSSI (Android + Windows)
+  permission_handler: ^11.4.0      # runtime Bluetooth/Location permissions (Android)
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -59,6 +63,16 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.3
+
+flutter_launcher_icons:
+  android: true
+  ios: false
+  windows:
+    generate: true
+    image_path: "assets/icon/icon.jpg"
+    icon_size: 48
+  image_path: "assets/icon/icon.jpg"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
